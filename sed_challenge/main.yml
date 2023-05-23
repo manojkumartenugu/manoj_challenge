@@ -1,0 +1,65 @@
+- name: Install required packages
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - apache2
+    - libapache2-mod-proxy-html
+    - libxml2-dev
+    - openssl
+
+- name: Enable required Apache modules
+  apache2_module:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - proxy
+    - proxy_http
+    - proxy_html
+    - ssl
+    - rewrite
+
+- name: Create self-signed SSL certificate
+  openssl_certificate:
+    path: /etc/ssl/certs/selfsigned.crt
+    privatekey_path: /etc/ssl/private/selfsigned.key
+    common_name: your_domain
+
+- name: Configure Apache virtual host
+  template:
+    src: vhost.conf.j2
+    dest: /etc/apache2/sites-available/your_domain.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart Apache
+
+- name: Disable default Apache virtual host
+  apache2_module:
+    name: default
+    state: disabled
+
+- name: Enable configured Apache virtual host
+  apache2_module:
+    name: your_domain
+    state: enabled
+
+- name: Copy web page content
+  copy:
+    content: |
+      <html>
+      <head>
+      <title>Hello World</title>
+      </head>
+      <body>
+      <h1>Hello World!</h1>
+      </body>
+      </html>
+    dest: /var/www/html/index.html
+
+handlers:
+  - name: restart Apache
+    service:
+      name: apache2
+      state: restarted

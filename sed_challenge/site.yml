@@ -1,0 +1,5 @@
+- name: Configure and deploy web server
+  hosts: your_server
+  become: yes
+  roles:
+    - webserver
